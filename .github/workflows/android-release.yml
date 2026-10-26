@@ -36,10 +36,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android packages
-        run: |
-          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          yes | sdkmanager --licenses >/dev/null || true
+      - name: Set up Android SDK with available packages
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
       - name: Install Godot editor and export templates
         run: |
