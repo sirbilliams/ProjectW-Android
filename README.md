@@ -8,7 +8,18 @@ You wake up in a small boarding house in **Dustfall**, a quiet settlement assemb
 
 **Current prototype:** primitive 3D meshes, flat-color materials, no imported art assets, two scrap pickups, a first-person player, a brief wake-up title card, and a basic HUD. The intro is a fade-in with text, not a fully animated wake-up. This is a **blockout**, not a finished level.
 
-**Not implemented:** NPC conversations, missions, crowds, detailed textures, soundscape, actual worldspace streaming, separate-display Pip-Boy, persistence/save files and Android APK release.
+**Not implemented:** branching conversations, missions, crowds, detailed textures, soundscape, actual worldspace streaming, separate-display Pip-Boy and persistence/save files. Android alpha debug APK releases are now automated.
+
+## Alpha 2 — The Pit and the first morning
+
+You wake on an old mattress in Dustfall. Calder, an aging scavenger beside your bed in a rocking chair, tells you he dragged you out of **the Pit** while looking for spare parts. Advance his dialogue with E / X. Once you stand, visit **Mara** at the saloon/canteen in the northern part of town.
+
+The world starts at 08:00 on Day 1. A full in-game day takes approximately **24 real minutes** while exploring. The procedural sky shifts from daytime dusty blue to dusk and dark night; lighting changes with the clock. The simple color-gradient sky is a placeholder, not a full textured skybox.
+
+- **Wait:** T on keyboard / Y on the controller advances one hour.
+- **Sleep:** look toward and interact with the mattress in the boarding-house room (E / X) to sleep until 07:00.
+- Time pauses during conversations, wake-up narration and wait/sleep fades.
+- Neither sleeping nor waiting saves the game yet.
 
 ## Run on a PC
 
@@ -26,6 +37,8 @@ You wake up in a small boarding house in **Dustfall**, a quiet settlement assemb
 | Jump | Space | A / Cross |
 | Interact / loot | E | X / Square |
 | Shoot (prototype) | F | Right shoulder |
+| Wait one hour | T | Y / Triangle |
+| Sleep until morning | E near bed | X / Square near bed |
 | Release mouse | Escape | — |
 
 Controller mappings depend on Android's and Godot's button numbering. Test on the Thor MAX.
