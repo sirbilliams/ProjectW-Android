@@ -6,4 +6,4 @@ func _initialize() -> void:
     settings.set_setting("export/android/android_sdk_path", OS.get_environment("ANDROID_SDK_ROOT"))
     settings.save()
     print("Android SDK path: ", OS.get_environment("ANDROID_SDK_ROOT"))
-    quit()
+    call_deferred("quit", 0)
