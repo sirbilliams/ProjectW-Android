@@ -29,8 +29,8 @@ jobs:
       GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      RELEASE_TAG: v0.1.0-alpha.1
-      APK_PATH: build/ProjectW-Dustfall-v0.1.0-alpha.apk
+      RELEASE_TAG: v0.2.0-alpha.1
+      APK_PATH: build/ProjectW-Dustfall-v0.2.0-alpha.apk
     steps:
       - uses: actions/checkout@v4
 
@@ -95,10 +95,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > /tmp/release-notes.md <<'EOF'
-          # Dustfall — first Android prototype
+          # Dustfall — Alpha 2: The Pit and the first morning
           Early **debug-signed** build for AYN Thor MAX testing.
 
-          Includes a simple wake-up intro, first-person controls, salvaged settlement blockout, scrap pickups and HUD.
+          Includes Calder finding you in the Pit, the rocking-chair wake-up dialogue, Mara at the saloon/canteen, a procedural day/night sky, in-game clock, bed sleeping and one-hour waiting. Also includes first-person exploration, scrap pickups and the Dustfall settlement blockout.
 
           **Prototype only:** Not playtested on device; chunk streaming and bottom-screen Pip-Boy are not yet implemented.
 
@@ -107,5 +107,5 @@ jobs:
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$APK_PATH" --clobber
           else
-            gh release create "$RELEASE_TAG" "$APK_PATH" --target "$GITHUB_SHA" --title "Dustfall v0.1.0 Alpha 1 (Android)" --notes-file /tmp/release-notes.md --prerelease
+            gh release create "$RELEASE_TAG" "$APK_PATH" --target "$GITHUB_SHA" --title "Dustfall v0.2.0 Alpha 2 (Android)" --notes-file /tmp/release-notes.md --prerelease
           fi
