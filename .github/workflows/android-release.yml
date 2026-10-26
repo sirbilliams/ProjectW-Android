@@ -11,13 +11,17 @@ on:
       - ".github/workflows/android-release.yml"
   workflow_dispatch:
 
+concurrency:
+  group: projectw-android-release
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
 jobs:
   android:
     runs-on: ubuntu-22.04
-    timeout-minutes: 35
+    timeout-minutes: 15
     env:
       GODOT_VERSION: "4.4.1"
       GODOT_ANDROID_KEYSTORE_DEBUG_PATH: "${{ github.workspace }}/debug.keystore"
@@ -64,7 +68,7 @@ jobs:
 
       - name: Set Godot Android SDK paths
         run: |
-          /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --editor --script res://tools/configure_android.gd
+          timeout 40s /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --editor --quit-after 1 --script res://tools/configure_android.gd
 
       - name: Export Android APK
         run: |
