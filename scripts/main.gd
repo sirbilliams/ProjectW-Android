@@ -1,7 +1,7 @@
 extends Node3D
 
 const PLAYER_SCRIPT = preload("res://scripts/player.gd")
-const ENEMY_SCRIPT = preload("res://scripts/enemy.gd")
+const DUSTFALL_CHUNK = preload("res://scripts/world/chunks/dustfall_001.gd")
 
 var status_label: Label
 var health_label: Label
@@ -12,10 +12,10 @@ func _ready() -> void:
     _setup_input_map()
     _build_environment()
     _build_player()
-    _build_loot(Vector3(2, 0.35, -4))
-    _build_loot(Vector3(-5, 0.35, -8))
-    _build_enemy(Vector3(5, 0, -12))
+    _build_loot(Vector3(-12, 0.35, 18))
+    _build_loot(Vector3(7, 0.35, -5))
     _build_hud()
+    _show_wake_up_intro()
     if not OS.has_feature("android"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -76,43 +76,14 @@ func _build_environment() -> void:
     sun.shadow_enabled = true
     add_child(sun)
 
-    _box("Wasteland ground", Vector3(0, -0.5, -10), Vector3(70, 1, 70), Color(0.34, 0.31, 0.25), true)
-    _box("Cracked road", Vector3(0, 0.015, -10), Vector3(7, 0.03, 65), Color(0.19, 0.20, 0.19), false)
-    _box("Gas station", Vector3(-8, 2, -12), Vector3(7, 4, 6), Color(0.38, 0.34, 0.28), true)
-    _box("Broken canopy", Vector3(-8, 4.6, -9), Vector3(10, 0.35, 5), Color(0.43, 0.30, 0.20), true)
-    _box("Canopy post 1", Vector3(-12, 2.2, -7.2), Vector3(0.25, 4.4, 0.25), Color(0.28, 0.27, 0.23), true)
-    _box("Canopy post 2", Vector3(-4, 2.2, -7.2), Vector3(0.25, 4.4, 0.25), Color(0.28, 0.27, 0.23), true)
-    _box("Collapsed wall", Vector3(8, 1.1, -7), Vector3(5, 2.2, 0.6), Color(0.37, 0.34, 0.29), true)
-    _box("Rusty container", Vector3(11, 1, -17), Vector3(3, 2, 5), Color(0.35, 0.20, 0.13), true)
-    _box("Concrete barrier", Vector3(-2, 0.55, -17), Vector3(3, 1.1, 0.8), Color(0.39, 0.38, 0.33), true)
-    for pos in [Vector3(-15, 0, -19), Vector3(15, 0, -5), Vector3(17, 0, -23), Vector3(-17, 0, -2)]:
-        _box("Dead tree trunk", pos + Vector3(0, 1.7, 0), Vector3(0.35, 3.4, 0.35), Color(0.22, 0.17, 0.12), true)
-
-func _box(label: String, pos: Vector3, size: Vector3, color: Color, solid: bool) -> void:
-    var body := StaticBody3D.new()
-    body.name = label
-    body.position = pos
-    var mesh := MeshInstance3D.new()
-    var shape_mesh := BoxMesh.new()
-    shape_mesh.size = size
-    mesh.mesh = shape_mesh
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = color
-    mat.roughness = 0.95
-    mesh.material_override = mat
-    body.add_child(mesh)
-    if solid:
-        var collision := CollisionShape3D.new()
-        var shape := BoxShape3D.new()
-        shape.size = size
-        collision.shape = shape
-        body.add_child(collision)
-    add_child(body)
+    var starting_chunk := Node3D.new()
+    starting_chunk.set_script(DUSTFALL_CHUNK)
+    add_child(starting_chunk)
 
 func _build_player() -> void:
     var player := CharacterBody3D.new()
     player.name = "Player"
-    player.position = Vector3(0, 0, 2)
+    player.position = Vector3(-15, 0.35, 20)
     player.set_script(PLAYER_SCRIPT)
     add_child(player)
 
@@ -137,13 +108,6 @@ func _build_loot(pos: Vector3) -> void:
     loot.add_child(collision)
     add_child(loot)
 
-func _build_enemy(pos: Vector3) -> void:
-    var enemy := CharacterBody3D.new()
-    enemy.name = "Scavenger"
-    enemy.position = pos
-    enemy.set_script(ENEMY_SCRIPT)
-    add_child(enemy)
-
 func _build_hud() -> void:
     var layer := CanvasLayer.new()
     layer.name = "HUD"
@@ -155,7 +119,7 @@ func _build_hud() -> void:
     var column := VBoxContainer.new()
     panel.add_child(column)
     var heading := Label.new()
-    heading.text = "WASTELAND  //  FIELD STATUS"
+    heading.text = "DUSTFALL  //  FIELD STATUS"
     column.add_child(heading)
     health_label = Label.new()
     health_label.name = "Health"
@@ -168,7 +132,7 @@ func _build_hud() -> void:
     status_label.position = Vector2(24, 150)
     status_label.size = Vector2(1850, 70)
     status_label.add_theme_font_size_override("font_size", 26)
-    status_label.text = "WASD / LEFT STICK: Move   •   Mouse / RIGHT STICK: Look   •   E / X: Loot   •   F / RB: Fire"
+    status_label.text = "You wake in a strange room. Outside, Dustfall is quiet."
     layer.add_child(status_label)
 
 func add_scrap(amount: int) -> void:
@@ -183,3 +147,28 @@ func update_health(amount: int) -> void:
 func set_status(message: String) -> void:
     if is_instance_valid(status_label):
         status_label.text = message
+
+func _show_wake_up_intro() -> void:
+    var overlay := CanvasLayer.new()
+    overlay.name = "WakeUpOverlay"
+    overlay.layer = 10
+    add_child(overlay)
+    var shade := ColorRect.new()
+    shade.color = Color(0.035, 0.028, 0.023, 1.0)
+    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    overlay.add_child(shade)
+    var words := Label.new()
+    words.text = "DUSTFALL\\n\\nThe wind slips through the window.\\nSomewhere outside, an old bell rings.\\n\\nYou open your eyes."
+    words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    words.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    words.add_theme_font_size_override("font_size", 27)
+    words.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    shade.add_child(words)
+    await get_tree().create_timer(3.6).timeout
+    if not is_instance_valid(shade):
+        return
+    var tween := create_tween()
+    tween.tween_property(shade, "modulate:a", 0.0, 2.6)
+    await tween.finished
+    overlay.queue_free()
+    set_status("Dustfall, a quiet frontier settlement. Find out where you are.")
