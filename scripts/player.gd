@@ -85,6 +85,8 @@ func _physics_process(delta: float) -> void:
     _read_gamepad_look(delta)
     move_and_slide()
 
+    if Input.is_action_just_pressed("wait"):
+        get_tree().current_scene.call("wait_one_hour")
     if Input.is_action_just_pressed("interact"):
         _interact()
     if Input.is_action_just_pressed("fire"):
@@ -111,6 +113,9 @@ func _interact() -> void:
         get_tree().current_scene.call("start_dialogue", target.name)
         return
     if target is Node and target.is_in_group("interactable"):
+        if target.get_meta("action", "") == "sleep":
+            get_tree().current_scene.call("sleep_in_bed")
+            return
         if target.get_meta("loot_type", "") == "scrap":
             get_tree().current_scene.call("add_scrap", randi_range(2, 8))
             target.queue_free()
@@ -133,7 +138,7 @@ func _fire() -> void:
 
 func _controls_locked() -> bool:
     var world := get_tree().current_scene
-    return world.get("intro_active") == true or world.get("dialogue_active") == true
+    return world.get("intro_active") == true or world.get("dialogue_active") == true or world.get("time_transition_active") == true
 
 func _status(message: String) -> void:
     var main := get_tree().current_scene
