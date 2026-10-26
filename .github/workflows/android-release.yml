@@ -23,8 +23,8 @@ jobs:
       GODOT_ANDROID_KEYSTORE_DEBUG_PATH: "${{ github.workspace }}/debug.keystore"
       GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
       GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
-      ANDROID_HOME: "${{ github.workspace }}/android-sdk"
-      ANDROID_SDK_ROOT: "${{ github.workspace }}/android-sdk"
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       RELEASE_TAG: v0.1.0-alpha.1
       APK_PATH: build/ProjectW-Dustfall-v0.1.0-alpha.apk
     steps:
@@ -35,9 +35,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Install Android packages
         run: |
@@ -64,6 +61,10 @@ jobs:
       - name: Validate Godot project import
         run: |
           /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --editor --import --quit
+
+      - name: Set Godot Android SDK paths
+        run: |
+          /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --editor --script res://tools/configure_android.gd
 
       - name: Export Android APK
         run: |
