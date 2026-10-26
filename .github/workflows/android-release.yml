@@ -74,11 +74,11 @@ jobs:
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME; JAVA_HOME=$JAVA_HOME"
           ls -l "$ANDROID_HOME/platform-tools/adb" "$ANDROID_HOME/build-tools/35.0.0/apksigner" "$GODOT_ANDROID_KEYSTORE_DEBUG_PATH" || true
-          grep -E "android_sdk_path|java_sdk_path" ~/.config/godot/editor_settings-4.tres || true
+          find ~/.config/godot -maxdepth 2 -type f -name "*settings*" -print -exec grep -E "android_sdk_path|java_sdk_path" {} \\; || true
 
       - name: Export Android APK
         run: |
-          /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --export-debug Android "$APK_PATH"
+          /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --verbose --headless --path . --export-debug Android "$APK_PATH"
           test -s "$APK_PATH"
 
       - name: Upload build artifact
