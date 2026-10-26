@@ -23,7 +23,7 @@ func _ready() -> void:
 
     camera = Camera3D.new()
     camera.name = "FirstPersonCamera"
-    camera.position.y = 1.55
+    camera.position.y = 0.95
     camera.current = true
     add_child(camera)
 
@@ -46,6 +46,8 @@ func _ready() -> void:
     camera.add_child(weapon)
 
 func _unhandled_input(event: InputEvent) -> void:
+    if _controls_locked():
+        return
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
         rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
         pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, deg_to_rad(-85), deg_to_rad(85))
@@ -56,6 +58,15 @@ func _unhandled_input(event: InputEvent) -> void:
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _physics_process(delta: float) -> void:
+    if _controls_locked():
+        velocity.x = 0.0
+        velocity.z = 0.0
+        if not is_on_floor():
+            velocity.y -= 9.8 * delta
+        move_and_slide()
+        if not get_tree().current_scene.get("intro_active") and Input.is_action_just_pressed("interact"):
+            get_tree().current_scene.call("advance_dialogue")
+        return
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
@@ -96,6 +107,9 @@ func _interact() -> void:
         _status("Nothing close enough to interact with.")
         return
     var target := ray.get_collider()
+    if target is Node and target.is_in_group("dialogue_npc"):
+        get_tree().current_scene.call("start_dialogue")
+        return
     if target is Node and target.is_in_group("interactable"):
         if target.get_meta("loot_type", "") == "scrap":
             get_tree().current_scene.call("add_scrap", randi_range(2, 8))
@@ -116,6 +130,10 @@ func _fire() -> void:
         _status("Shot fired. Target hit.")
     else:
         _status("Shot fired. No hit.")
+
+func _controls_locked() -> bool:
+    var world := get_tree().current_scene
+    return world.get("intro_active") == true or world.get("dialogue_active") == true
 
 func _status(message: String) -> void:
     var main := get_tree().current_scene
