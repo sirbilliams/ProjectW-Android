@@ -158,7 +158,7 @@ func _show_wake_up_intro() -> void:
     shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     overlay.add_child(shade)
     var words := Label.new()
-    words.text = "DUSTFALL\\n\\nThe wind slips through the window.\\nSomewhere outside, an old bell rings.\\n\\nYou open your eyes."
+    words.text = "DUSTFALL\n\nThe wind slips through the window.\nSomewhere outside, an old bell rings.\n\nYou open your eyes."
     words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     words.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     words.add_theme_font_size_override("font_size", 27)
