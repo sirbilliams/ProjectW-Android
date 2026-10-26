@@ -7,14 +7,28 @@ var status_label: Label
 var health_label: Label
 var inventory_label: Label
 var scrap_count := 0
+var intro_active := true
+var dialogue_active := false
+var dialogue_page := 0
+var dialogue_panel: PanelContainer
+var dialogue_text: Label
+var dialogue_hint: Label
+const MARA_LINES := [
+    "MARA: Easy there, stranger. You're safe. Name's Mara. I fix what this town can't afford to replace.",
+    "MARA: Found you unconscious on the south road, half buried in dust. Brought you here before the scavengers did.",
+    "MARA: This is Dustfall. We have clean water when the purifier cooperates, and a roof when the wind is kind.",
+    "MARA: Take a look around. When you're ready, meet me near the workshop. We could use another pair of hands."
+]
 
 func _ready() -> void:
     _setup_input_map()
     _build_environment()
     _build_player()
+    _spawn_mara()
     _build_loot(Vector3(-12, 0.35, 18))
     _build_loot(Vector3(7, 0.35, -5))
     _build_hud()
+    _build_dialogue()
     _show_wake_up_intro()
     if not OS.has_feature("android"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -84,6 +98,7 @@ func _build_player() -> void:
     var player := CharacterBody3D.new()
     player.name = "Player"
     player.position = Vector3(-15, 0.35, 20)
+    player.rotation.y = -PI / 2.0
     player.set_script(PLAYER_SCRIPT)
     add_child(player)
 
