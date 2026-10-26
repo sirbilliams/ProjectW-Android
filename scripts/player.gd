@@ -49,11 +49,9 @@ func _unhandled_input(event: InputEvent) -> void:
     if _controls_locked():
         return
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-        rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
-        pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, deg_to_rad(-85), deg_to_rad(85))
+        rotate_y(-event.relative.x * MOUSE_SENSITIVITY * _option("mouse", 1.0))
+        pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY * _option("mouse", 1.0) * _invert_y(), deg_to_rad(-85), deg_to_rad(85))
         camera.rotation.x = pitch
-    elif event.is_action_pressed("pause_mouse") and not OS.has_feature("android"):
-        Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
     elif event is InputEventMouseButton and event.pressed and not OS.has_feature("android"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -96,9 +94,9 @@ func _read_gamepad_look(delta: float) -> void:
     for device in Input.get_connected_joypads():
         var x := Input.get_joy_axis(device, JOY_AXIS_RIGHT_X)
         var y := Input.get_joy_axis(device, JOY_AXIS_RIGHT_Y)
-        if absf(x) > 0.16 or absf(y) > 0.16:
-            rotate_y(-x * GAMEPAD_LOOK_SPEED * delta)
-            pitch = clampf(pitch - y * GAMEPAD_LOOK_SPEED * delta, deg_to_rad(-85), deg_to_rad(85))
+        if absf(x) > _option("deadzone", 0.16) or absf(y) > _option("deadzone", 0.16):
+            rotate_y(-x * GAMEPAD_LOOK_SPEED * _option("stick", 1.0) * delta)
+            pitch = clampf(pitch - y * GAMEPAD_LOOK_SPEED * _option("stick", 1.0) * _invert_y() * delta, deg_to_rad(-85), deg_to_rad(85))
             camera.rotation.x = pitch
             break
 
@@ -135,6 +133,20 @@ func _fire() -> void:
         _status("Shot fired. Target hit.")
     else:
         _status("Shot fired. No hit.")
+
+func _option(key: String, fallback: float) -> float:
+    var ui := get_tree().current_scene.get_node_or_null("PauseMenu")
+    if ui == null:
+        return fallback
+    var values: Dictionary = ui.get("settings")
+    return float(values.get(key, fallback))
+
+func _invert_y() -> float:
+    var ui := get_tree().current_scene.get_node_or_null("PauseMenu")
+    if ui == null:
+        return 1.0
+    var values: Dictionary = ui.get("settings")
+    return -1.0 if bool(values.get("invert_y", false)) else 1.0
 
 func _controls_locked() -> bool:
     var world := get_tree().current_scene
