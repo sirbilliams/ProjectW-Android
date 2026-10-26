@@ -29,8 +29,8 @@ jobs:
       GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      RELEASE_TAG: v0.2.0-alpha.1
-      APK_PATH: build/ProjectW-Dustfall-v0.2.0-alpha.apk
+      RELEASE_TAG: v0.3.0-alpha.1
+      APK_PATH: build/ProjectW-Dustfall-v0.3.0-alpha.apk
     steps:
       - uses: actions/checkout@v4
 
@@ -98,7 +98,7 @@ jobs:
           # Dustfall — Alpha 2: The Pit and the first morning
           Early **debug-signed** build for AYN Thor MAX testing.
 
-          Includes Calder finding you in the Pit, the rocking-chair wake-up dialogue, Mara at the saloon/canteen, a procedural day/night sky, in-game clock, bed sleeping and one-hour waiting. Also includes first-person exploration, scrap pickups and the Dustfall settlement blockout.
+          Adds Start/Escape pause menu with graphics, sound and controls settings; Select/Back waits one hour; new highway and building textures. Calder and Mara, sleeping, and the day/night cycle remain.
 
           **Prototype only:** Not playtested on device; chunk streaming and bottom-screen Pip-Boy are not yet implemented.
 
@@ -107,5 +107,5 @@ jobs:
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$APK_PATH" --clobber
           else
-            gh release create "$RELEASE_TAG" "$APK_PATH" --target "$GITHUB_SHA" --title "Dustfall v0.2.0 Alpha 2 (Android)" --notes-file /tmp/release-notes.md --prerelease
+            gh release create "$RELEASE_TAG" "$APK_PATH" --target "$GITHUB_SHA" --title "Dustfall v0.3.0 Alpha 3 (Android)" --notes-file /tmp/release-notes.md --prerelease
           fi
