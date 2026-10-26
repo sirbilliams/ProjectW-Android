@@ -32,6 +32,7 @@ func _ready() -> void:
     ray.target_position = Vector3(0, 0, -3)
     ray.collide_with_areas = true
     camera.add_child(ray)
+    ray.add_exception(self)
 
     var weapon := MeshInstance3D.new()
     weapon.name = "PlaceholderWeapon"
@@ -97,7 +98,7 @@ func _interact() -> void:
     var target := ray.get_collider()
     if target is Node and target.is_in_group("interactable"):
         if target.get_meta("loot_type", "") == "scrap":
-            get_tree().current_scene.add_scrap(randi_range(2, 8))
+            get_tree().current_scene.call("add_scrap", randi_range(2, 8))
             target.queue_free()
             _status("Scrap recovered.")
             return
@@ -111,7 +112,7 @@ func _fire() -> void:
     ray.force_raycast_update()
     var target := ray.get_collider()
     if target is Node and target.is_in_group("enemies"):
-        target.take_damage(34)
+        target.call("take_damage", 34)
         _status("Shot fired. Target hit.")
     else:
         _status("Shot fired. No hit.")
@@ -119,15 +120,15 @@ func _fire() -> void:
 func _status(message: String) -> void:
     var main := get_tree().current_scene
     if main.has_method("set_status"):
-        main.set_status(message)
+        main.call("set_status", message)
 
 func take_damage(amount: int) -> void:
     health = maxi(0, health - amount)
     if health <= 0:
         health = 100
-        global_position = Vector3(0, 0, 2)
+        global_position = Vector3(-15, 0.35, 20)
         velocity = Vector3.ZERO
         _status("You were downed. Respawned at the roadside.")
     var main := get_tree().current_scene
     if main.has_method("update_health"):
-        main.update_health(health)
+        main.call("update_health", health)
