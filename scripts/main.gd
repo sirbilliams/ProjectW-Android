@@ -2,6 +2,7 @@ extends Node3D
 
 const PLAYER_SCRIPT = preload("res://scripts/player.gd")
 const DUSTFALL_CHUNK = preload("res://scripts/world/chunks/dustfall_001.gd")
+const PAUSE_MENU = preload("res://scripts/ui/pause_menu.gd")
 
 var status_label: Label
 var health_label: Label
@@ -36,6 +37,7 @@ var world_environment: WorldEnvironment
 var clock_label: Label
 var sky_timer := 0.0
 var time_transition_active := false
+var pause_ui: CanvasLayer
 
 
 func _ready() -> void:
@@ -49,6 +51,10 @@ func _ready() -> void:
     _build_bed_interaction()
     _build_hud()
     _build_dialogue()
+    pause_ui = CanvasLayer.new()
+    pause_ui.name = "PauseMenu"
+    pause_ui.set_script(PAUSE_MENU)
+    add_child(pause_ui)
     _show_wake_up_intro()
     if not OS.has_feature("android"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -62,12 +68,12 @@ func _setup_input_map() -> void:
     _add_key("interact", KEY_E)
     _add_key("fire", KEY_F)
     _add_key("wait", KEY_T)
-    _add_button("wait", JOY_BUTTON_Y)
-    _add_key("pause_mouse", KEY_ESCAPE)
+    _add_button("wait", JOY_BUTTON_BACK)
+    _add_key("pause_menu", KEY_ESCAPE)
     _add_button("jump", JOY_BUTTON_A)
     _add_button("interact", JOY_BUTTON_X)
     _add_button("fire", JOY_BUTTON_RIGHT_SHOULDER)
-    _add_button("pause_mouse", JOY_BUTTON_START)
+    _add_button("pause_menu", JOY_BUTTON_START)
     _add_axis("move_left", JOY_AXIS_LEFT_X, -1.0)
     _add_axis("move_right", JOY_AXIS_LEFT_X, 1.0)
     _add_axis("move_forward", JOY_AXIS_LEFT_Y, -1.0)
@@ -262,7 +268,7 @@ func _build_bed_interaction() -> void:
     add_child(bed)
 
 func _process(delta: float) -> void:
-    if intro_active or dialogue_active or time_transition_active:
+    if intro_active or dialogue_active or time_transition_active or pause_ui.open:
         return
     world_minutes += delta * GAME_MINUTES_PER_REAL_SECOND
     while world_minutes >= 1440.0:
@@ -279,7 +285,7 @@ func _update_clock() -> void:
         return
     var hours := int(world_minutes) / 60
     var minutes := int(world_minutes) % 60
-    clock_label.text = "DAY %d  %02d:%02d  |  T / Y : Wait 1 hour" % [world_day, hours, minutes]
+    clock_label.text = "DAY %d  %02d:%02d  |  Select : Wait 1 hour" % [world_day, hours, minutes]
 
 func _update_sky() -> void:
     # Procedural colors avoid expensive skybox textures on Android.
