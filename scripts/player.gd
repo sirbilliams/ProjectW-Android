@@ -108,7 +108,7 @@ func _interact() -> void:
         return
     var target := ray.get_collider()
     if target is Node and target.is_in_group("dialogue_npc"):
-        get_tree().current_scene.call("start_dialogue")
+        get_tree().current_scene.call("start_dialogue", target.name)
         return
     if target is Node and target.is_in_group("interactable"):
         if target.get_meta("loot_type", "") == "scrap":
