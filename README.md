@@ -1,24 +1,49 @@
 # Project Wasteland — Android
 
-A Fallout-inspired (original IP) first-person wasteland RPG prototype for the **AYN Thor MAX**, built in **Godot 4** with GDScript.
+An original, first-person post-apocalyptic open-world RPG prototype for the **AYN Thor MAX**, built with **Godot 4 and GDScript**.
 
-## Milestone 1
-- First-person movement with keyboard/mouse and gamepad
-- Small procedural roadside level
-- Collectible scrap and a hostile scavenger
-- Hitscan combat and a basic HUD
+## Prototype: Worldspace 001 — Dustfall
 
-**Status:** early prototype, not yet tested on hardware or exported to APK.
+You wake up in a small boarding house in **Dustfall**, a quiet settlement assembled from salvage after the collapse of modern civilization. The town has a trading post, saloon, workshop, clinic and water purification station. Rusting wrecks, dead utility poles, barricades and fragments of a fallen highway establish the post-apocalyptic setting. The north and south roads are reserved for future neighboring chunks.
 
-## Run
-1. Open `project.godot` using Godot 4.x (standard/GDScript edition).
-2. Press F5 to run the project.
-3. WASD / left stick: move; mouse / right stick: look; Space / A: jump; E / X: interact; F / right shoulder: shoot; Escape: release mouse.
+**Current prototype:** primitive 3D meshes, flat-color materials, no imported art assets, two scrap pickups, a first-person player, a brief wake-up title card, and a basic HUD. The intro is a fade-in with text, not a fully animated wake-up. This is a **blockout**, not a finished level.
 
-## Android
-Install Android export templates matching your Godot version and configure JDK 17 + Android SDK under Editor Settings → Export → Android. Then add an Android export preset in Project → Export and export a debug APK. Test it on the Thor MAX before setting a performance target.
+**Not implemented:** NPC conversations, missions, crowds, detailed textures, soundscape, actual worldspace streaming, separate-display Pip-Boy, persistence/save files and Android APK release.
 
-## Dual-screen note
-The **bottom-screen Pip-Boy is a planned feature, not implemented yet**. Rendering into two independent Android displays requires device/firmware validation and likely native Android integration, beyond the initial Godot prototype.
+## Run on a PC
 
-This project is an original wasteland setting, not affiliated with Bethesda or Fallout.
+1. Clone or download this repository.
+2. Open `project.godot` in a recent **Godot 4.x standard (GDScript)** editor.
+3. Press **F5** to run the main scene. You begin in the boarding house.
+4. Face the door toward the main street (+X/east) to explore Dustfall.
+
+## Controls
+
+| Action | Keyboard / mouse | Controller |
+| --- | --- | --- |
+| Move | W/A/S/D | Left stick |
+| Look | Mouse | Right stick |
+| Jump | Space | A / Cross |
+| Interact / loot | E | X / Square |
+| Shoot (prototype) | F | Right shoulder |
+| Release mouse | Escape | — |
+
+Controller mappings depend on Android's and Godot's button numbering. Test on the Thor MAX.
+
+## Android test APK
+
+Godot's Android export requires the export templates matching your editor version, a compatible JDK and Android SDK configured in the editor. Set up **Project → Export → Android**, then produce a **debug APK** and sideload it to the AYN Thor MAX. Nothing in this repository should be represented as an already-tested Android build.
+
+## Chunk layout
+
+`scripts/world/chunks/dustfall_001.gd` owns the first self-contained, approximately 96 × 96 meter worldspace. Later neighboring worldspaces can be designed as separate chunk scenes with a manager that loads them as the player travels. **Chunk streaming is not implemented yet**.
+
+`scripts/main.gd` handles bootstrap/environment/HUD and starting worldspace. `scripts/player.gd` handles first-person interaction and controls.
+
+## Current limitations
+
+This branch has been committed through GitHub but **has not been verified in a running Godot editor or on hardware**. Expect to iterate on geometry, physics, gamepad mapping and performance after the first local run.
+
+The bottom-screen Pip-Boy is planned; independent rendering on the Thor's second Android display needs separate device/firmware/native-integration research and testing.
+
+This is an original project unaffiliated with Bethesda or Fallout.
