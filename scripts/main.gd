@@ -55,6 +55,8 @@ func _ready() -> void:
     pause_ui.name = "PauseMenu"
     pause_ui.set_script(PAUSE_MENU)
     add_child(pause_ui)
+    pause_ui.connect("settings_changed", _update_player_settings)
+    _update_player_settings()
     _show_wake_up_intro()
     if not OS.has_feature("android"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -127,6 +129,17 @@ func _build_environment() -> void:
     var starting_chunk := Node3D.new()
     starting_chunk.set_script(DUSTFALL_CHUNK)
     add_child(starting_chunk)
+
+func _update_player_settings() -> void:
+    if pause_ui == null:
+        return
+    var player := get_node_or_null("Player")
+    if player == null:
+        return
+    var camera := player.get_node_or_null("FirstPersonCamera")
+    if camera != null:
+        var values: Dictionary = pause_ui.get("settings")
+        camera.fov = float(values.get("fov", 75.0))
 
 func _build_player() -> void:
     var player := CharacterBody3D.new()
@@ -268,7 +281,7 @@ func _build_bed_interaction() -> void:
     add_child(bed)
 
 func _process(delta: float) -> void:
-    if intro_active or dialogue_active or time_transition_active or pause_ui.open:
+    if intro_active or dialogue_active or time_transition_active or (pause_ui != null and pause_ui.get("open") == true):
         return
     world_minutes += delta * GAME_MINUTES_PER_REAL_SECOND
     while world_minutes >= 1440.0:
