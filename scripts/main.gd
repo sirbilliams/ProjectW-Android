@@ -13,17 +13,26 @@ var dialogue_page := 0
 var dialogue_panel: PanelContainer
 var dialogue_text: Label
 var dialogue_hint: Label
-const MARA_LINES := [
-    "MARA: Easy there, stranger. You're safe. Name's Mara. I fix what this town can't afford to replace.",
-    "MARA: Found you unconscious on the south road, half buried in dust. Brought you here before the scavengers did.",
-    "MARA: This is Dustfall. We have clean water when the purifier cooperates, and a roof when the wind is kind.",
-    "MARA: Take a look around. When you're ready, meet me near the workshop. We could use another pair of hands."
+const CALDER_LINES := [
+    "CALDER: Hey. You're awake. Easy now. Don't try getting up too quick.",
+    "CALDER: Found you down in the Pit while I was scavenging for parts. Saw your hand beneath a pile of rusted scrap.",
+    "CALDER: Dragged you out myself. Didn't expect you'd make it through the night.",
+    "CALDER: You're in Dustfall. Name's Calder, but most folks call me Old Cal.",
+    "CALDER: The Pit's no place to be lying unconscious. Once you can walk, get some food over at the saloon. Mara keeps that place running."
 ]
+const MARA_LINES := [
+    "MARA: Well, you're the one Old Cal pulled out of the Pit. He hasn't stopped talking about it.",
+    "MARA: Welcome to the Dustfall canteen. Coffee's weak, stew's questionable, but nobody leaves hungry.",
+    "MARA: If you're going to stay awhile, lend a hand. Ask around town and see what needs fixing."
+]
+var active_dialogue: Array = []
+var active_speaker := ""
 
 func _ready() -> void:
     _setup_input_map()
     _build_environment()
     _build_player()
+    _spawn_calder()
     _spawn_mara()
     _build_loot(Vector3(-12, 0.35, 18))
     _build_loot(Vector3(7, 0.35, -5))
@@ -123,6 +132,103 @@ func _build_loot(pos: Vector3) -> void:
     loot.add_child(collision)
     add_child(loot)
 
+func _spawn_calder() -> void:
+    var calder := _make_npc("Calder", Vector3(-13.0, 0.0, 20.0), Color(0.33, 0.32, 0.27))
+    _npc_part(calder, "Chair back", Vector3(0, 1.15, 0.36), Vector3(1.15, 1.7, 0.18), Color(0.3, 0.21, 0.13))
+    _npc_part(calder, "Chair seat", Vector3(0, 0.53, 0), Vector3(1.2, 0.18, 1), Color(0.32, 0.22, 0.14))
+    for x in [-0.53, 0.53]:
+        _npc_part(calder, "Rocking runner", Vector3(x, 0.12, 0), Vector3(0.12, 0.18, 1.55), Color(0.23, 0.17, 0.12))
+    var rocking := create_tween().set_loops()
+    rocking.tween_property(calder, "rotation:z", 0.03, 1.7).set_trans(Tween.TRANS_SINE)
+    rocking.tween_property(calder, "rotation:z", -0.03, 1.7).set_trans(Tween.TRANS_SINE)
+
+func _spawn_mara() -> void:
+    # Inside the saloon / canteen, facing its doorway toward main street.
+    _make_npc("Mara", Vector3(-13.5, 0.0, -7.0), Color(0.36, 0.25, 0.20))
+
+func _make_npc(npc_name: String, pos: Vector3, coat_color: Color) -> Area3D:
+    var npc := Area3D.new()
+    npc.name = npc_name
+    npc.position = pos
+    npc.add_to_group("dialogue_npc")
+    var collider := CollisionShape3D.new()
+    var capsule := CapsuleShape3D.new()
+    capsule.height = 2.0
+    capsule.radius = 0.46
+    collider.shape = capsule
+    collider.position.y = 1.0
+    npc.add_child(collider)
+    _npc_part(npc, "Coat", Vector3(0, 1.18, 0), Vector3(0.72, 1.0, 0.45), coat_color)
+    _npc_part(npc, "Head", Vector3(0, 1.94, 0), Vector3(0.48, 0.48, 0.46), Color(0.52, 0.4, 0.31))
+    _npc_part(npc, "Boots", Vector3(0, 0.37, 0), Vector3(0.55, 0.74, 0.32), Color(0.19, 0.17, 0.15))
+    add_child(npc)
+    return npc
+
+func _npc_part(parent: Node3D, label: String, pos: Vector3, size: Vector3, color: Color) -> void:
+    var part := MeshInstance3D.new()
+    part.name = label
+    part.position = pos
+    var mesh := BoxMesh.new()
+    mesh.size = size
+    part.mesh = mesh
+    var material := StandardMaterial3D.new()
+    material.albedo_color = color
+    part.material_override = material
+    parent.add_child(part)
+
+func _build_dialogue() -> void:
+    var layer := CanvasLayer.new()
+    layer.name = "Dialogue"
+    layer.layer = 5
+    add_child(layer)
+    dialogue_panel = PanelContainer.new()
+    dialogue_panel.visible = false
+    dialogue_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+    dialogue_panel.offset_left = 64.0
+    dialogue_panel.offset_right = -64.0
+    dialogue_panel.offset_top = -250.0
+    dialogue_panel.offset_bottom = -30.0
+    layer.add_child(dialogue_panel)
+    var content := VBoxContainer.new()
+    content.add_theme_constant_override("separation", 14)
+    dialogue_panel.add_child(content)
+    var heading := Label.new()
+    heading.text = "DUSTFALL / CONVERSATION"
+    heading.add_theme_font_size_override("font_size", 18)
+    content.add_child(heading)
+    dialogue_text = Label.new()
+    dialogue_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    dialogue_text.custom_minimum_size = Vector2(0, 90)
+    dialogue_text.add_theme_font_size_override("font_size", 23)
+    content.add_child(dialogue_text)
+    dialogue_hint = Label.new()
+    dialogue_hint.text = "E / X : Continue"
+    content.add_child(dialogue_hint)
+
+func start_dialogue(speaker: String = "Calder") -> void:
+    if intro_active or dialogue_active:
+        return
+    active_speaker = speaker
+    active_dialogue = MARA_LINES if speaker == "Mara" else CALDER_LINES
+    dialogue_page = 0
+    dialogue_active = true
+    dialogue_panel.visible = true
+    dialogue_text.text = active_dialogue[0]
+    dialogue_hint.text = "E / X : Continue"
+
+func advance_dialogue() -> void:
+    if not dialogue_active:
+        return
+    dialogue_page += 1
+    if dialogue_page >= active_dialogue.size():
+        dialogue_active = false
+        dialogue_panel.visible = false
+        set_status("OBJECTIVE: Explore Dustfall. Find Mara at the saloon / canteen.")
+        return
+    dialogue_text.text = active_dialogue[dialogue_page]
+    if dialogue_page == active_dialogue.size() - 1:
+        dialogue_hint.text = "E / X : Finish"
+
 func _build_hud() -> void:
     var layer := CanvasLayer.new()
     layer.name = "HUD"
@@ -169,21 +275,34 @@ func _show_wake_up_intro() -> void:
     overlay.layer = 10
     add_child(overlay)
     var shade := ColorRect.new()
-    shade.color = Color(0.035, 0.028, 0.023, 1.0)
+    shade.color = Color(0.025, 0.023, 0.02, 1.0)
     shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     overlay.add_child(shade)
     var words := Label.new()
-    words.text = "DUSTFALL\n\nThe wind slips through the window.\nSomewhere outside, an old bell rings.\n\nYou open your eyes."
+    words.text = "DUSTFALL\n\nA wooden chair creaks beside you.\nSomeone clears his throat.\n\n'Hey. You're awake.'"
     words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     words.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-    words.add_theme_font_size_override("font_size", 27)
+    words.add_theme_font_size_override("font_size", 26)
     words.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     shade.add_child(words)
-    await get_tree().create_timer(3.6).timeout
+    await get_tree().create_timer(2.6).timeout
     if not is_instance_valid(shade):
         return
+    var player := get_node_or_null("Player")
+    var camera: Camera3D = player.get_node_or_null("FirstPersonCamera")
+    camera.rotation.x = -0.25
     var tween := create_tween()
-    tween.tween_property(shade, "modulate:a", 0.0, 2.6)
+    tween.set_parallel(true)
+    tween.tween_property(shade, "modulate:a", 0.0, 2.0)
     await tween.finished
     overlay.queue_free()
-    set_status("Dustfall, a quiet frontier settlement. Find out where you are.")
+    intro_active = false
+    start_dialogue("Calder")
+    while dialogue_active:
+        await get_tree().process_frame
+    var rising := create_tween()
+    rising.set_parallel(true)
+    rising.tween_property(camera, "position:y", 1.55, 2.0)
+    rising.tween_property(camera, "rotation:x", 0.0, 2.0)
+    await rising.finished
+    set_status("OBJECTIVE: Leave the boarding house. Mara works at the saloon.")
