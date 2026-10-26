@@ -86,7 +86,7 @@ func _show_settings() -> void:
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         b.pressed.connect(func(): _show_settings_tab(tab_name))
         tabs.add_child(b)
-    _show_settings_tab("Audio")
+    _show_settings_header("Audio")
 
 func _show_settings_tab(tab: String) -> void:
     _show_settings_header(tab)
@@ -200,6 +200,11 @@ func _caption(message: String) -> void:
     label.text = message
     label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     page.add_child(label)
+
+func _unhandled_input(event: InputEvent) -> void:
+    if event.is_action_pressed("pause_menu") and not event.is_echo():
+        get_viewport().set_input_as_handled()
+        toggle()
 
 func toggle() -> void:
     open = not open
