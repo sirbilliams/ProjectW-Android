@@ -27,6 +27,16 @@ const MARA_LINES := [
 ]
 var active_dialogue: Array = []
 var active_speaker := ""
+var world_minutes := 8.0 * 60.0
+var world_day := 1
+const GAME_MINUTES_PER_REAL_SECOND := 1.0
+var sun_light: DirectionalLight3D
+var sky_material: ProceduralSkyMaterial
+var world_environment: WorldEnvironment
+var clock_label: Label
+var sky_timer := 0.0
+var time_transition_active := false
+
 
 func _ready() -> void:
     _setup_input_map()
@@ -36,6 +46,7 @@ func _ready() -> void:
     _spawn_mara()
     _build_loot(Vector3(-12, 0.35, 18))
     _build_loot(Vector3(7, 0.35, -5))
+    _build_bed_interaction()
     _build_hud()
     _build_dialogue()
     _show_wake_up_intro()
@@ -50,6 +61,8 @@ func _setup_input_map() -> void:
     _add_key("jump", KEY_SPACE)
     _add_key("interact", KEY_E)
     _add_key("fire", KEY_F)
+    _add_key("wait", KEY_T)
+    _add_button("wait", JOY_BUTTON_Y)
     _add_key("pause_mouse", KEY_ESCAPE)
     _add_button("jump", JOY_BUTTON_A)
     _add_button("interact", JOY_BUTTON_X)
@@ -87,17 +100,23 @@ func _build_environment() -> void:
     var env := Environment.new()
     env.background_mode = Environment.BG_SKY
     env.sky = Sky.new()
+    sky_material = ProceduralSkyMaterial.new()
+    sky_material.use_debanding = true
+    env.sky.sky_material = sky_material
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color(0.48, 0.52, 0.55)
     env.ambient_light_energy = 0.65
     world.environment = env
     add_child(world)
+    world_environment = world
 
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-42, -28, 0)
     sun.light_energy = 1.1
     sun.shadow_enabled = true
     add_child(sun)
+    sun_light = sun
+    _update_sky()
 
     var starting_chunk := Node3D.new()
     starting_chunk.set_script(DUSTFALL_CHUNK)
@@ -229,6 +248,97 @@ func advance_dialogue() -> void:
     if dialogue_page == active_dialogue.size() - 1:
         dialogue_hint.text = "E / X : Finish"
 
+func _build_bed_interaction() -> void:
+    var bed := Area3D.new()
+    bed.name = "SleepBed"
+    bed.add_to_group("interactable")
+    bed.set_meta("action", "sleep")
+    bed.position = Vector3(-17.2, 1.15, 21)
+    var collider := CollisionShape3D.new()
+    var box := BoxShape3D.new()
+    box.size = Vector3(2.4, 0.9, 3)
+    collider.shape = box
+    bed.add_child(collider)
+    add_child(bed)
+
+func _process(delta: float) -> void:
+    if intro_active or dialogue_active or time_transition_active:
+        return
+    world_minutes += delta * GAME_MINUTES_PER_REAL_SECOND
+    while world_minutes >= 1440.0:
+        world_minutes -= 1440.0
+        world_day += 1
+    sky_timer += delta
+    if sky_timer >= 0.25:
+        sky_timer = 0.0
+        _update_sky()
+        _update_clock()
+
+func _update_clock() -> void:
+    if clock_label == null:
+        return
+    var hours := int(world_minutes) / 60
+    var minutes := int(world_minutes) % 60
+    clock_label.text = "DAY %d  %02d:%02d  |  T / Y : Wait 1 hour" % [world_day, hours, minutes]
+
+func _update_sky() -> void:
+    # Procedural colors avoid expensive skybox textures on Android.
+    var hour := world_minutes / 60.0
+    var daylight := clampf(sin((hour - 6.0) / 12.0 * PI), 0.0, 1.0)
+    var twilight := clampf(1.0 - absf(hour - 6.0) / 2.0, 0.0, 1.0)
+    twilight = maxf(twilight, clampf(1.0 - absf(hour - 18.0) / 2.0, 0.0, 1.0))
+    var night_top := Color(0.015, 0.024, 0.065)
+    var day_top := Color(0.26, 0.37, 0.48)
+    var night_horizon := Color(0.045, 0.051, 0.085)
+    var day_horizon := Color(0.65, 0.50, 0.34)
+    sky_material.sky_top_color = night_top.lerp(day_top, daylight)
+    sky_material.sky_horizon_color = night_horizon.lerp(day_horizon, daylight).lerp(Color(0.78, 0.32, 0.18), twilight * 0.45)
+    sky_material.ground_bottom_color = Color(0.13, 0.10, 0.08)
+    sky_material.ground_horizon_color = Color(0.24, 0.19, 0.15).lerp(day_horizon, daylight)
+    sun_light.rotation_degrees = Vector3(-12.0 - 156.0 * (hour / 24.0), -28.0, 0.0)
+    sun_light.light_energy = 0.08 + 1.05 * daylight
+    sun_light.light_color = Color(1.0, 0.58, 0.34).lerp(Color(1.0, 0.96, 0.85), daylight)
+    world_environment.environment.ambient_light_energy = 0.2 + 0.45 * daylight
+
+func wait_one_hour() -> void:
+    if intro_active or dialogue_active or time_transition_active:
+        return
+    _advance_time(60.0, "You wait an hour. The settlement carries on around you.")
+
+func sleep_in_bed() -> void:
+    if intro_active or dialogue_active or time_transition_active:
+        return
+    var morning := 7.0 * 60.0
+    var passed := fposmod(morning - world_minutes, 1440.0)
+    if passed < 60.0:
+        passed += 1440.0
+    _advance_time(passed, "You wake rested as morning light reaches the room.")
+
+func _advance_time(minutes: float, message: String) -> void:
+    time_transition_active = true
+    var layer := CanvasLayer.new()
+    layer.layer = 15
+    add_child(layer)
+    var fade := ColorRect.new()
+    fade.color = Color(0.015, 0.014, 0.014, 0)
+    fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    layer.add_child(fade)
+    var fade_in := create_tween()
+    fade_in.tween_property(fade, "color:a", 1.0, 0.32)
+    await fade_in.finished
+    world_minutes += minutes
+    while world_minutes >= 1440.0:
+        world_minutes -= 1440.0
+        world_day += 1
+    _update_sky()
+    _update_clock()
+    var fade_out := create_tween()
+    fade_out.tween_property(fade, "color:a", 0.0, 0.45)
+    await fade_out.finished
+    layer.queue_free()
+    time_transition_active = false
+    set_status(message)
+
 func _build_hud() -> void:
     var layer := CanvasLayer.new()
     layer.name = "HUD"
@@ -249,6 +359,9 @@ func _build_hud() -> void:
     inventory_label = Label.new()
     inventory_label.text = "SCRAP  0"
     column.add_child(inventory_label)
+    clock_label = Label.new()
+    column.add_child(clock_label)
+    _update_clock()
     status_label = Label.new()
     status_label.position = Vector2(24, 150)
     status_label.size = Vector2(1850, 70)
