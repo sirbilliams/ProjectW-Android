@@ -9,12 +9,15 @@ const CONCRETE := Color(0.34, 0.35, 0.34)
 const RUST := Color(0.36, 0.21, 0.13)
 const METAL := Color(0.26, 0.29, 0.28)
 const WOOD := Color(0.34, 0.25, 0.18)
+var texture_cache: Dictionary = {}
 
 func _ready() -> void:
     name = "Dustfall_001"
     _box("Dusty terrain", Vector3(0, -0.65, 0), Vector3(96, 1.3, 96), SAND)
     _box("Former highway asphalt", Vector3(0, 0.025, 0), Vector3(11, 0.05, 96), Color(0.19, 0.20, 0.19), false)
     _box("Old intersection", Vector3(0, 0.03, 12), Vector3(76, 0.055, 7), Color(0.23, 0.23, 0.21), false)
+
+    _road_details()
 
     # All doors face the central roadway; walk through any open door.
     _building("Boarding House", -15, 19, 11, 10, 4.6, WOOD, true)
@@ -35,6 +38,58 @@ func _ready() -> void:
     _sign("North exit marker", Vector3(7, 0, -44))
     _sign("South exit marker", Vector3(7, 0, 44))
 
+func _road_details() -> void:
+    # A former asphalt highway with broken edges, pothole repairs, and worn markings.
+    # Thin, non-colliding geometry keeps the driving/walking surface smooth.
+    for i in range(28):
+        var z := -43.0 + float(i) * 3.15
+        var side := -1.0 if i % 2 == 0 else 1.0
+        var x := side * (3.2 + float(i % 4) * 0.38)
+        _box("Asphalt fissure", Vector3(x, 0.061, z), Vector3(0.08, 0.015, 1.15 + float(i % 3) * 0.5), Color(0.06, 0.07, 0.07), false)
+        _box("Asphalt broken edge", Vector3(side * 5.45, 0.071, z+0.7), Vector3(0.65, 0.018, 0.9), SAND, false)
+    for i in range(15):
+        var z := -40.0 + float(i) * 5.6
+        if z < 9.0 or z > 16.0:
+            _box("Faded road center paint", Vector3(0, 0.061, z), Vector3(0.14, 0.016, 1.7), Color(0.49, 0.43, 0.3), false)
+    for i in range(8):
+        var z := -33.0 + float(i) * 9.0
+        _box("Pothole dark patch", Vector3(2.4, 0.064, z), Vector3(1.4, 0.015, 1.2), Color(0.11, 0.12, 0.11), false)
+        _box("Filled road repair", Vector3(-2.6, 0.065, z+2.5), Vector3(1.5, 0.015, 1.0), Color(0.28, 0.26, 0.22), false)
+
+func _surface_kind(label: String) -> String:
+    var lower := label.to_lower()
+    if "asphalt" in lower or "highway" in lower or "road" in lower or "pothole" in lower:
+        return "asphalt"
+    if "wall" in lower or "concrete" in lower or "clinic" in lower:
+        return "concrete"
+    if "wood" in lower or "house" in lower or "saloon" in lower or "table" in lower or "counter" in lower:
+        return "wood"
+    if "roof" in lower or "metal" in lower or "rust" in lower or "barrel" in lower or "fence" in lower or "truck" in lower or "bus" in lower:
+        return "metal"
+    return "dust"
+
+func _texture_for(kind: String) -> Texture2D:
+    if texture_cache.has(kind):
+        return texture_cache[kind]
+    var im := Image.create_empty(64, 64, false, Image.FORMAT_RGBA8)
+    var seeds := {"asphalt": 13, "concrete": 27, "wood": 37, "metal": 53, "dust": 71}
+    var seed_value: int = seeds.get(kind, 71)
+    for y in range(64):
+        for x in range(64):
+            var pattern := float((x * 73 + y * 131 + seed_value * 271 + (x * y) % 97) % 255) / 255.0
+            var shade := 0.75 + pattern * 0.25
+            if kind == "wood":
+                shade *= 0.83 if (y + int(pattern * 5.0)) % 14 < 2 else 1.0
+            elif kind == "metal":
+                shade *= 0.88 if x % 19 < 2 else 1.0
+            elif kind == "asphalt":
+                shade *= 0.75 if (x + y * 2) % 31 == 0 else 1.0
+            im.set_pixel(x, y, Color(shade, shade, shade, 1.0))
+    im.generate_mipmaps()
+    var texture := ImageTexture.create_from_image(im)
+    texture_cache[kind] = texture
+    return texture
+
 func _building(label: String, x: float, z: float, width: float, depth: float, height: float, wall_color: Color, bedroom: bool = false) -> void:
     var center := Vector3(x, 0, z)
     var facing_right := x < 0.0 # West buildings face east (+X); east buildings face west (-X)
@@ -49,6 +104,12 @@ func _building(label: String, x: float, z: float, width: float, depth: float, he
     _box(label + " frontage south", Vector3(inner_side, height/2.0, z + (depth + 2.5)/4.0), Vector3(0.35, height, segment), wall_color)
     _box(label + " doorway lintel", Vector3(inner_side, height - 0.55, z), Vector3(0.35, 1.1, 2.5), wall_color)
     _box(label + " patched roof", Vector3(x, height + 0.2, z), Vector3(width+0.7, 0.4, depth+0.7), METAL)
+    # Repeating salvaged construction elements make even basic box buildings readable.
+    _box(label + " roof trim north", Vector3(x, height + 0.48, z-depth/2.0), Vector3(width+0.8, 0.12, 0.2), RUST, false)
+    _box(label + " roof trim south", Vector3(x, height + 0.48, z+depth/2.0), Vector3(width+0.8, 0.12, 0.2), RUST, false)
+    for index in range(3):
+        var seam_z := z-depth*0.35 + float(index) * depth*0.35
+        _box(label + " sheet metal seam", Vector3(x, height+0.42, seam_z), Vector3(width+0.8, 0.035, 0.06), Color(0.15,0.15,0.14), false)
     # Pieces of uneven sheet metal nailed to the outside give a scavenged silhouette.
     _box(label + " patch panel", Vector3(inner_side + (0.21 if facing_right else -0.21), 2.0, z + depth*0.29), Vector3(0.08, 2.3, 1.4), RUST, false)
     _box(label + " front canopy", Vector3(inner_side + (1.15 if facing_right else -1.15), 3.1, z), Vector3(2.4, 0.18, depth*0.75), RUST, false)
@@ -140,6 +201,9 @@ func _box(label: String, pos: Vector3, size: Vector3, color: Color, solid: bool 
     mesh.mesh = geometry
     var mat := StandardMaterial3D.new()
     mat.albedo_color = color
+    mat.albedo_texture = _texture_for(_surface_kind(label))
+    mat.uv1_triplanar = true
+    mat.uv1_scale = Vector3(0.23, 0.23, 0.23)
     mat.roughness = 0.96
     mesh.material_override = mat
     body.add_child(mesh)
