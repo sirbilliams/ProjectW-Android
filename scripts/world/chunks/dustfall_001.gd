@@ -24,6 +24,7 @@ func _ready() -> void:
     _building("Makeshift Clinic", -16, -28, 11, 9, 3.9, CONCRETE)
     _building("Water Purifier", 17, -29, 10, 9, 3.8, METAL)
 
+    _canteen_interior()
     _wrecked_bus(Vector3(32, 0, 8))
     _truck(Vector3(9, 0, -20))
     _collapsed_overpass()
@@ -56,6 +57,20 @@ func _building(label: String, x: float, z: float, width: float, depth: float, he
         _box("Faded mattress", Vector3(x - 2.2, 0.88, z+2.0), Vector3(2.2, 0.22, 2.8), Color(0.53, 0.49, 0.38))
         _box("Bedside crate", Vector3(x + 0.5, 0.65, z+2.5), Vector3(1.2, 1.3, 1.0), WOOD)
         _box("Broken window", Vector3(outer_side, 2.7, z-1.8), Vector3(0.08, 1.2, 1.7), Color(0.12, 0.15, 0.15), false)
+
+func _canteen_interior() -> void:
+    # The saloon doubles as Dustfall's communal dining hall.
+    _box("Canteen counter", Vector3(-18.8, 0.9, -9.6), Vector3(1.15, 1.8, 4.7), WOOD)
+    _box("Canteen table", Vector3(-15.8, 0.85, -3.7), Vector3(2.0, 0.18, 1.4), WOOD)
+    _box("Canteen table legs", Vector3(-15.8, 0.43, -3.7), Vector3(0.45, 0.8, 0.5), METAL)
+    _box("Canteen cooking barrel", Vector3(-19.4, 0.55, -4.4), Vector3(1.0, 1.1, 0.9), RUST)
+    var lantern := OmniLight3D.new()
+    lantern.name = "Canteen low-power lantern"
+    lantern.position = Vector3(-17.5, 2.7, -7)
+    lantern.light_color = Color(1.0, 0.67, 0.38)
+    lantern.omni_range = 8.5
+    lantern.light_energy = 0.8
+    add_child(lantern)
 
 func _wrecked_bus(pos: Vector3) -> void:
     _box("Rusted bus body", pos+Vector3(0, 1.9, 0), Vector3(3.3, 3.2, 9), RUST)
