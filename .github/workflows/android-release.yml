@@ -66,6 +66,12 @@ jobs:
         run: |
           /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --editor --import --quit
 
+      - name: Check game startup
+        run: |
+          /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --quit-after 90 > /tmp/runtime.log 2>&1
+          cat /tmp/runtime.log
+          if grep -q "SCRIPT ERROR" /tmp/runtime.log; then exit 1; fi
+
       - name: Set Godot Android SDK paths
         run: |
           timeout 40s /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path . --editor --quit-after 1 --script res://tools/configure_android.gd
